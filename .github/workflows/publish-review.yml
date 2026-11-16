@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       draft_filename:
-        description: 'Exact markdown filename from .github/drafts/ (e.g. 2026-11-16-topic.md)'
+        description:'
         required: true
+        
         type: string
       source_reviewed:
         description: 'Type REVIEWED after reading the source and checking the claims'
@@ -18,7 +19,7 @@ permissions:
 
 jobs:
   prepare:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'k
     runs-on: ubuntu-latest
 
     steps:

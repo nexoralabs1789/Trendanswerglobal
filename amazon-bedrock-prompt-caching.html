@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Amazon Bedrock Prompt Caching: How It Works (2026) | TrendAnswer Global</title>
+<meta name="description" content="How does Amazon Bedrock prompt caching work for open-weight models? Learn implicit vs explicit caching, costs, use cases, and practical limitations.">
+<meta name="robots" content="index,follow">
+<style>
+:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;background:#f7f9fc;color:#18263b;font:17px/1.75 system-ui,-apple-system,Segoe UI,Arial,sans-serif}header,footer{background:#10243a;color:#fff}header{padding:24px 20px}header a{color:#fff;text-decoration:none;font-weight:700}main{max-width:830px;margin:36px auto;background:#fff;border-radius:13px;padding:clamp(22px,5vw,56px);box-shadow:0 3px 16px #10243a10}h1{font-size:clamp(29px,5vw,42px);line-height:1.2}h2{line-height:1.3;margin-top:36px;color:#123b65}p,li{max-width:72ch}.eyebrow{font-size:14px;color:#526784;font-weight:700;letter-spacing:.04em;text-transform:uppercase}.summary{background:#edf5ff;border-left:5px solid #3275bb;padding:16px 20px;border-radius:5px}a{color:#145b98}a:focus-visible{outline:3px solid #f7ab26}table{width:100%;border-collapse:collapse}th,td{border:1px solid #d7e1ec;text-align:left;vertical-align:top;padding:12px}th{background:#edf5ff}footer{padding:24px 20px;text-align:center;font-size:14px}.note{font-size:14px;color:#506178}.table-wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<header><a href="../index.html">TrendAnswer Global</a> · Clear answers to technology questions</header>
+<main>
+<p class="eyebrow">Artificial Intelligence · Explained · 16 November 2026</p>
+<h1>How Does Amazon Bedrock Prompt Caching Work for Open-Weight AI Models?</h1>
+<p class="summary"><strong>Quick answer:</strong> Amazon Bedrock prompt caching lets supported AI models reuse previously processed parts of a prompt—such as system instructions, documentation, or conversation history—rather than processing identical context again for every request. This can reduce input costs and response times when the same context is reused often. Actual savings depend on the model, caching mode, and cache-hit rate.</p>
+<p>On 16 November 2026, AWS published a technical guide to using prompt caching with open-weight models through Amazon Bedrock's Chat Completions API. The important question for developers is not simply whether caching is available, but <em>which parts of a prompt stay unchanged</em> from request to request.</p>
+<h2>What is prompt caching?</h2>
+<p>An AI request may contain a large block of repeated context: company rules, a lengthy manual, instructions for a coding agent, or earlier messages in a conversation. Prompt caching allows supported models to reuse work from an identical prompt prefix. Instead of processing that prefix again, Bedrock can read its cached representation and process the new portion of the request.</p>
+<p>This does <strong>not</strong> mean every prompt is stored permanently or every repeated request will hit the cache. Cache lifetime, eligibility, minimum prefix size, and supported interfaces depend on the specific model.</p>
+<h2>What changed in the November 2026 AWS guide?</h2>
+<p>AWS demonstrated implicit and explicit caching for open-weight models using the Chat Completions API. The guide shows how to arrange recurring context before a changing user question, optionally set a cache breakpoint, and inspect response usage fields to tell whether tokens were read from or written to cache. This is a published implementation walkthrough—not a guarantee that every open-weight model supports the same features.</p>
+<h2>Implicit vs explicit caching: what's the difference?</h2>
+<div class="table-wrap"><table><thead><tr><th>Question</th><th>Implicit caching</th><th>Explicit caching</th></tr></thead><tbody>
+<tr><td>Who chooses the cached prefix?</td><td>The service selects eligible repeated prefixes, on a best-effort basis.</td><td>The developer marks reusable prefix boundaries.</td></tr>
+<tr><td>Do requests need special cache markers?</td><td>Typically no.</td><td>Yes, for interfaces and models that support explicit controls.</td></tr>
+<tr><td>Good starting use case</td><td>Chat histories and agent loops with stable initial context.</td><td>A fixed reference document followed by different questions.</td></tr>
+<tr><td>What can go wrong?</td><td>Changes early in the prompt prevent reuse of that prefix.</td><td>Incorrect breakpoints or unsupported models can prevent caching.</td></tr>
+</tbody></table></div>
+<h2>When can caching help?</h2>
+<p>Consider a customer-support assistant that receives the same product manual with every question. If the manual is reused as an identical prefix, the service may avoid reprocessing it each time. A coding agent that repeatedly sends the same instructions and existing conversation can benefit for similar reasons.</p>
+<p>For short, unrelated prompts with no substantial shared prefix, caching may provide little benefit. A heavily edited instruction block can also reduce reuse.</p>
+<h2>Does prompt caching always save money?</h2>
+<p>No. Cache reads are generally charged differently from normal input tokens, and some models charge a higher rate to write cache entries. If the prefix is rarely reused before expiry, cache writes might offset potential savings. Teams should compare real cache-read, cache-write, and uncached token usage with their model's current pricing.</p>
+<p><strong>Practical rule:</strong> put stable instructions and reference material first, changing questions last, and measure actual cache hits rather than assuming they happen.</p>
+<h2>How can developers check whether caching worked?</h2>
+<ol>
+<li>Choose a Bedrock model and Region that support the intended caching mode and API.</li>
+<li>Make repeated requests with an identical eligible prefix and changing final question.</li>
+<li>Inspect the response's cached-token and cache-write usage fields where supported.</li>
+<li>Compare costs and latency across repeated calls; check the model's minimum-prefix and cache-lifetime rules.</li>
+</ol>
+<h2>Frequently asked questions</h2>
+<h3>Is prompt caching the same as storing an AI answer?</h3>
+<p>No. It reuses processing associated with recurring input context. It is not a cache of completed answers to arbitrary questions.</p>
+<h3>Does every Amazon Bedrock model support it?</h3>
+<p>No. Support for implicit or explicit modes, APIs, Regions, token minimums, and time-to-live varies by model. Check AWS's model-specific documentation.</p>
+<h3>Can it help RAG applications?</h3>
+<p>Potentially. If a retrieved document or shared instruction set remains identical across requests, it may form a reusable prefix. When retrieved passages frequently change, hits can be less predictable.</p>
+<h3>Does caching guarantee faster responses?</h3>
+<p>No. AWS describes potential latency improvements, but the outcome depends on whether a request actually hits an eligible cache and on the model and workload.</p>
+<h2>Sources and further reading</h2>
+<ul>
+<li><a href="https://aws.amazon.com/blogs/machine-learning/use-prompt-caching-with-open-weight-models-on-amazon-bedrock/" rel="noopener noreferrer">AWS Machine Learning Blog — Use prompt caching with open-weight models on Amazon Bedrock (16 November 2026)</a></li>
+<li><a href="https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html" rel="noopener noreferrer">Amazon Bedrock User Guide — Prompt caching for faster model inference</a></li>
+</ul>
+<p class="note">Editorial note: Based on the cited AWS technical material, checked 16 November 2026. Features and prices may change; consult the latest model documentation before implementing production workloads. This explainer is independent of AWS.</p>
+<p><a href="../index.html">← Back to TrendAnswer Global</a></p>
+</main>
+<footer>© TrendAnswer Global · Independent technology explainers</footer>
+</body>
+</html>

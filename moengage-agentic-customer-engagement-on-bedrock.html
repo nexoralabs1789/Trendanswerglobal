@@ -1,0 +1,102 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
+
+<title>MoEngage Agentic Customer Engagement on Bedrock | TrendAnswer Global</title>
+
+<meta name="description"
+      content="Learn how MoEngage built Merlin AI agentic customer engagement using Amazon Bedrock AgentCore and the Model Context Protocol.">
+
+<link rel="canonical"
+      href="https://nexoralabs1789.github.io/Trendanswerglobal/moengage-agentic-customer-engagement-on-bedrock.html">
+
+<style>
+
+body {
+    font-family: system-ui, Arial, sans-serif;
+    line-height: 1.7;
+    max-width: 820px;
+    margin: 40px auto;
+    padding: 0 18px;
+    color: #17243a;
+}
+
+a {
+    color: #1263a1;
+}
+
+header {
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 30px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<a href="./">TrendAnswer Global</a>
+
+</header>
+
+<main>
+
+<h1>MoEngage Agentic Customer Engagement on Bedrock</h1>
+
+<h2>Introduction to MoEngage and Merlin AI</h2>
+<p>According to the publisher, MoEngage—a customer engagement platform used by more than 1,350 consumer brands—built Merlin AI, a set of artificial intelligence (AI) agents that work with live platform data. Marketing and product teams can draft, analyze, and adjust campaigns from a single conversation. The publisher states that this architecture was built using Amazon Bedrock and Amazon Bedrock AgentCore.</p>
+<h2>Four Agent Modes in Merlin AI</h2>
+<p>The source text notes that Merlin AI operates four kinds of agents, all backed by foundation models in Amazon Bedrock for reasoning and generation, the AgentCore runtime for hosting, and the Model Context Protocol (MCP) for standardized data access:</p>
+<ul>
+<li><strong>Merlin AI Studio:</strong> Places purpose-built agents into workflows, including a Copywriter, a Designer, Segment Assist, Jinja Assist, an In-App Template Builder, and Flow Assist
+.</li>
+<li><strong>Conversational agents:</strong> Operate across campaigns, analytics, segments, and flows. This includes a Campaign Insights Agent embedded on the analytics page that delegates tasks to specialized sub-agents.</li>
+<li><strong>Custom agents:</strong> Allow lifecycle and CRM teams to run continuous agents on MoEngage data and tools under defined rules, offering either full autonomy or required human review.</li>
+<li><strong>Decisioning agents:</strong> Act for individual customers to determine what to say, when, and on which channel, including Offer Decisioning and Campaign Decisioning.</li>
+</ul>
+<h2>Architecture and Tenant Isolation</h2>
+<p>MoEngage designed its architecture around four distinct layers:
+1.  <strong>Clients:</strong> Internal Merlin AI agents and external MCP clients (such as Claude and ChatGPT via the MoEngage MCP Connector) connect to the MoEngage MCP server.
+2.  <strong>MCP server on AgentCore runtime:</strong> Hosts the MCP server to expose MoEngage platform capabilities as MCP tools without running its own model.
+3.  <strong>MoEngage platform APIs:</strong> The MCP server calls OpenAPI 3.0-compatible APIs that enforce existing permissions and data residency rules.
+4.  <strong>Foundation models in Amazon Bedrock:</strong> Utilized for tool-call planning, content generation, and summarizing results.</p>
+<p>To keep multi-tenant data secure and isolated, the publisher notes that the MCP server reuses existing JWT-based authentication, workspace and user contexts travel in request headers rather than tool arguments, and the AgentCore runtime executes each user session in an isolated environment. Additionally, Amazon Bedrock Guardrails apply content safety and PII filters.</p>
+<h2>Customer Results</h2>
+<p>According to the publisher, MoEngage customers have realized operational improvements using these tools. For example, the customer Glance achieved a 38% uplift in push notification click-through rates and reached campaign go-live 50% faster.</p>
+<h2>What remains uncertain</h2>
+<p>The source article cuts off mid-sentence at the end of the text, leaving the complete details of Glance's final metrics unverified. Furthermore, all architectural and performance claims are based solely on the publisher's post without independent verification.</p>
+
+<hr>
+
+<p>
+<strong>Primary source:</strong>
+<a href="https://aws.amazon.com/blogs/machine-learning/how-moengage-built-agentic-customer-engagement-on-amazon-bedrock-agentcore/"
+   rel="noopener noreferrer">
+   https://aws.amazon.com/blogs/machine-learning/how-moengage-built-agentic-customer-engagement-on-amazon-bedrock-agentcore/
+</a>
+</p>
+
+</main>
+
+<footer>
+
+<p>
+TrendAnswer Global —
+independently edited explainer.
+</p>
+
+</footer>
+
+</body>
+
+</html>

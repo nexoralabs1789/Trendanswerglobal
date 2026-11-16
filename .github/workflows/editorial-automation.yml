@@ -1,0 +1,172 @@
+name: TrendAnswer - Editorial Automation
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 8 * * 1,4"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate editorial research
+        run: |
+          python - <<'PY'
+          import urllib.request
+          import urllib.parse
+          import xml.etree.ElementTree as ET
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from email.utils import parsedate_to_datetime
+
+          topics = [
+              "artificial intelligence",
+              "cybersecurity",
+              "software updates",
+              "consumer technology"
+          ]
+
+          results = []
+          seen = set()
+
+          for topic in topics:
+              query = urllib.parse.quote(topic + " when:3d")
+              url = (
+                  "https://news.google.com/rss/search?q="
+                  + query
+                  + "&hl=en-US&gl=US&ceid=US:en"
+              )
+
+              try:
+                  req = urllib.request.Request(
+                      url,
+                      headers={"User-Agent": "Mozilla/5.0"}
+                  )
+
+                  with urllib.request.urlopen(
+                      req, timeout=20
+                  ) as response:
+                      root = ET.fromstring(response.read())
+
+                  for item in root.findall(".//item")[:8]:
+                      title = item.findtext("title", "").strip()
+                      link = item.findtext("link", "").strip()
+                      published = item.findtext("pubDate", "")
+
+                      if not title or not link:
+                          continue
+
+                      key = title.lower()
+
+                      if key in seen:
+                          continue
+
+                      seen.add(key)
+
+                      results.append({
+                          "title": title,
+                          "link": link,
+                          "category": topic,
+                          "published": published
+                      })
+
+              except Exception as error:
+                  print(f"Error scanning {topic}: {error}")
+
+          if not results:
+              raise RuntimeError("No news collected")
+
+          now = datetime.now(timezone.utc)
+          date = now.strftime("%Y-%m-%d")
+
+          lines = [
+              "# TrendAnswer Global - Editorial Research",
+              "",
+              f"Research date: {date}",
+              "",
+              "STATUS: RESEARCH ONLY - NOT APPROVED",
+              "",
+              "Headlines are leads, not verified facts.",
+              "Check original sources before publication.",
+              ""
+          ]
+
+          for number, item in enumerate(results, 1):
+              title = item["title"]
+              link = item["link"]
+
+              lines += [
+                  f"## {number}. {title}",
+                  "",
+                  f"Category: {item['category']}",
+                  "",
+                  f"Published: {item['published']}",
+                  "",
+                  f"Source: {link}",
+                  "",
+                  "### Suggested article questions",
+                  "",
+                  "- What happened, and what is confirmed?",
+                  "- Why does this development matter?",
+                  "- Who may be affected?",
+                  "- What should readers know or do next?",
+                  "",
+                  "### Editorial checklist",
+                  "",
+                  "- [ ] Verify the original announcement",
+                  "- [ ] Confirm the publication date",
+                  "- [ ] Cross-check important claims",
+                  "- [ ] Check if the topic is still relevant",
+                  "- [ ] Identify a useful reader question",
+                  "- [ ] Prepare an original English article",
+                  "- [ ] Review SEO title and description",
+                  "- [ ] Approve before publication",
+                  "",
+                  "---",
+                  ""
+              ]
+
+          output = Path(".github/research/trends.md")
+          output.parent.mkdir(parents=True, exist_ok=True)
+
+          output.write_text(
+              "\n".join(lines),
+              encoding="utf-8"
+          )
+
+          print(f"Prepared {len(results)} research leads")
+          PY
+
+      - name: Create editorial review pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Update editorial research"
+          branch: "automation/editorial-research"
+          delete-branch: true
+          title: "Editorial Review - Global Technology Trends"
+          body: |
+            Automated TrendAnswer research report.
+
+            This pull request contains research leads only.
+
+            No article is approved for publication.
+
+            Please verify sources and review proposed topics.
+
+            Do not merge without editorial review.
+          add-paths: |
+            .github/research/trends.md

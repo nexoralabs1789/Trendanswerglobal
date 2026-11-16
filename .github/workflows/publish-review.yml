@@ -1,17 +1,32 @@
 name: TrendAnswer - Prepare Publication PR
 
 on:
+
   workflow_dispatch:
+
     inputs:
+
       draft_filename:
-        description:'
+
+        description: 'Exact markdown filename from .github/drafts/'
+
         required: true
-        
+
         type: string
+
       source_reviewed:
-        description: 'Type REVIEWED after reading the source and checking the claims'
+
+        description: 'Type REVIEWED after checking the source and claims'
+
         required: true
+
         type: string
+
+permissions:
+
+  contents: write
+
+  pull-requests: write
 
 permissions:
   contents: write

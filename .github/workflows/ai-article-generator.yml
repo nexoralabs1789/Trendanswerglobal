@@ -1,0 +1,272 @@
+name: TrendAnswer - AI Article Generator
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate AI article draft
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python - <<'PY'
+          import os
+          import json
+          import urllib.request
+          import urllib.parse
+          import xml.etree.ElementTree as ET
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          key = os.environ.get("GEMINI_API_KEY")
+
+          if not key:
+              raise RuntimeError("Gemini API key missing")
+
+          # STEP 1: Collect news
+          query = urllib.parse.quote(
+              "artificial intelligence technology when:3d"
+          )
+
+          rss_url = (
+              "https://news.google.com/rss/search?q="
+              + query
+              + "&hl=en-US&gl=US&ceid=US:en"
+          )
+
+          request = urllib.request.Request(
+              rss_url,
+              headers={"User-Agent": "Mozilla/5.0"}
+          )
+
+          with urllib.request.urlopen(
+              request, timeout=30
+          ) as response:
+              root = ET.fromstring(response.read())
+
+          articles = root.findall(".//item")
+
+          if not articles:
+              raise RuntimeError("No news found")
+
+          # Collect a small set of research leads
+          leads = []
+
+          for item in articles[:8]:
+              title = item.findtext("title", "").strip()
+              link = item.findtext("link", "").strip()
+              date = item.findtext("pubDate", "").strip()
+
+              if title and link:
+                  leads.append({
+                      "title": title,
+                      "url": link,
+                      "date": date
+                  })
+
+          if not leads:
+              raise RuntimeError("No valid research leads")
+
+          # STEP 2: Ask Gemini to prepare one draft
+          prompt = f"""
+          You are an English technology editor.
+
+          Publication: TrendAnswer Global.
+
+          Review these research leads:
+          {json.dumps(leads, ensure_ascii=False)}
+
+          Choose ONE topic that could answer a
+          useful search question.
+
+          Produce an original English SEO article draft.
+
+          Requirements:
+
+          1. Explain the topic clearly.
+          2. Use a natural question-based title.
+          3. Suggest one primary search keyword.
+          4. Suggest an SEO title under 60 characters.
+          5. Write a meta description under 155 characters.
+          6. Suggest an SEO-friendly URL slug.
+          7. Write 600-900 words where evidence permits.
+          8. Include H2 and H3 headings.
+          9. Include 4 relevant reader questions.
+          10. Include the source URLs supplied.
+          11. Do not invent quotations, statistics,
+              release dates or source citations.
+          12. Distinguish established facts from
+              unverified news claims.
+          13. Explain what requires verification.
+          14. Do not pretend to have opened sources.
+          15. Avoid sensational headlines.
+
+          IMPORTANT:
+          The input contains news headlines,
+          not independently verified source articles.
+
+          Begin the document with:
+          STATUS: UNVERIFIED AI DRAFT - HUMAN REVIEW REQUIRED
+
+          Return Markdown.
+          """
+
+          # STEP 3: Discover an available model
+          models_url = (
+              "https://generativelanguage.googleapis.com/"
+              "v1beta/models"
+          )
+
+          models_req = urllib.request.Request(
+              models_url,
+              headers={"x-goog-api-key": key}
+          )
+
+          with urllib.request.urlopen(
+              models_req, timeout=30
+          ) as response:
+              models_data = json.load(response)
+
+          supported = [
+              m["name"]
+              for m in models_data.get("models", [])
+              if "generateContent" in
+              m.get("supportedGenerationMethods", [])
+          ]
+
+          preferred = [
+              "models/gemini-3.5-flash-lite",
+              "models/gemini-2.5-flash-lite"
+          ]
+
+          model = next(
+              (m for m in preferred if m in supported),
+              None
+          )
+
+          if not model:
+              raise RuntimeError(
+                  "No preferred Flash-Lite model available. "
+                  "Check available models and pricing."
+              )
+
+          print("Selected model:", model)
+
+          # STEP 4: Generate draft
+          api_url = (
+              "https://generativelanguage.googleapis.com/"
+              "v1beta/" + model + ":generateContent"
+          )
+
+          payload = {
+              "contents": [{
+                  "parts": [{"text": prompt}]
+              }],
+              "generationConfig": {
+                  "temperature": 0.3,
+                  "maxOutputTokens": 3500
+              }
+          }
+
+          api_request = urllib.request.Request(
+              api_url,
+              data=json.dumps(payload).encode("utf-8"),
+              headers={
+                  "Content-Type": "application/json",
+                  "x-goog-api-key": key
+              },
+              method="POST"
+          )
+
+          with urllib.request.urlopen(
+              api_request, timeout=120
+          ) as response:
+              result = json.load(response)
+
+          candidates = result.get("candidates", [])
+
+          if not candidates:
+              raise RuntimeError("Gemini returned no draft")
+
+          parts = candidates[0].get(
+              "content", {}
+          ).get("parts", [])
+
+          article = "\n".join(
+              p.get("text", "")
+              for p in parts
+              if p.get("text")
+          )
+
+          if not article.strip():
+              raise RuntimeError("Empty article")
+
+          # STEP 5: Save draft
+          today = datetime.now(
+              timezone.utc
+          ).strftime("%Y-%m-%d-%H%M%S")
+
+          output_dir = Path(".github/drafts")
+          output_dir.mkdir(
+              parents=True,
+              exist_ok=True
+          )
+
+          output = output_dir / f"ai-draft-{today}.md"
+
+          header = (
+              "# TrendAnswer Editorial Draft\n\n"
+              "STATUS: NOT APPROVED\n\n"
+              "This content must be fact-checked "
+              "before publication.\n\n"
+              f"Model: {model}\n\n"
+              "---\n\n"
+          )
+
+          output.write_text(
+              header + article,
+              encoding="utf-8"
+          )
+
+          print("Draft generated:", output)
+          PY
+
+      - name: Create draft review pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: automation/ai-article-draft
+          delete-branch: true
+          commit-message: "Generate AI article draft"
+          title: "AI Article Draft - Editorial Review"
+          body: |
+            Gemini generated an English SEO article draft.
+
+            STATUS: HUMAN REVIEW REQUIRED
+
+            This draft contains unverified material.
+
+            Check:
+            - Original sources
+            - Factual accuracy
+            - Publication dates
+            - SEO title and description
+            - Content originality
+            - Reader usefulness
+
+            Merging this PR does not publish an article.
+
+            Publication requires a separate approved
+            HTML file and an editorial decision.
+          add-paths: |
+            .github/drafts/*.md
